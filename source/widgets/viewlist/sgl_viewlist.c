@@ -49,10 +49,6 @@ static int32_t sgl_viewlist_max_scroll(sgl_viewlist_t *viewlist)
     return sgl_max(0, content_h - sgl_viewlist_list_h(viewlist));
 }
 
-/* ------------------------------------------------------------------------ */
-/* Sliding-window item cache (same strategy as the filebrowser widget)       */
-/* ------------------------------------------------------------------------ */
-
 static void sgl_viewlist_release_cache(sgl_viewlist_t *viewlist)
 {
     if (viewlist->cache_items != NULL) {
@@ -175,10 +171,6 @@ static sgl_viewlist_item_t *sgl_viewlist_get_item(sgl_viewlist_t *viewlist, int3
     return &viewlist->cache_items[index - viewlist->cache_start_index];
 }
 
-/* ------------------------------------------------------------------------ */
-/* Geometry helpers                                                          */
-/* ------------------------------------------------------------------------ */
-
 static uint16_t sgl_viewlist_target_capacity(sgl_viewlist_t *viewlist)
 {
     const int32_t pitch  = sgl_viewlist_pitch(viewlist);
@@ -238,10 +230,6 @@ static void sgl_viewlist_scroll_commit(sgl_scroll_t *sc)
     sgl_obj_set_dirty(&viewlist->obj);
 }
 
-/* ------------------------------------------------------------------------ */
-/* Default item style: icon column + title / subtext                         */
-/* ------------------------------------------------------------------------ */
-
 static void sgl_viewlist_draw_item_default(sgl_viewlist_t *viewlist, sgl_surf_t *surf,
                                            sgl_area_t *clip, sgl_area_t *coords,
                                            const sgl_viewlist_item_t *item)
@@ -272,10 +260,6 @@ static void sgl_viewlist_draw_item_default(sgl_viewlist_t *viewlist, sgl_surf_t 
                         viewlist->subtext_color, viewlist->alpha, viewlist->font);
     }
 }
-
-/* ------------------------------------------------------------------------ */
-/* Widget event / draw                                                       */
-/* ------------------------------------------------------------------------ */
 
 static void sgl_viewlist_construct_cb(sgl_surf_t *surf, sgl_obj_t* obj, sgl_event_t *evt)
 {
@@ -416,10 +400,6 @@ static void sgl_viewlist_construct_cb(sgl_surf_t *surf, sgl_obj_t* obj, sgl_even
         break;
     }
 }
-
-/* ------------------------------------------------------------------------ */
-/* Public API                                                                */
-/* ------------------------------------------------------------------------ */
 
 /**
  * @brief create a viewlist object
