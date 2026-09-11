@@ -139,7 +139,7 @@ void sgl_viewlist_examples(sgl_obj_t *parent)
 
     /* Item geometry */
     sgl_viewlist_set_item_height(viewlist, 56);
-    sgl_viewlist_set_item_margin(viewlist, 4, 4);
+    sgl_viewlist_set_item_margin(viewlist, 4, 10);
 
     /* Virtual list data source and callbacks */
     sgl_viewlist_set_item_num(viewlist, MUSIC_SONG_NUM);

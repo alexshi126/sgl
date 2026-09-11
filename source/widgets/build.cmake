@@ -51,6 +51,7 @@ set(SGL_SOURCE
     ${CMAKE_CURRENT_LIST_DIR}/polygon/sgl_polygon.c
     ${CMAKE_CURRENT_LIST_DIR}/box/sgl_box.c
     ${CMAKE_CURRENT_LIST_DIR}/scrollview/sgl_scrollview.c
+    ${CMAKE_CURRENT_LIST_DIR}/tabview/sgl_tabview.c
     ${CMAKE_CURRENT_LIST_DIR}/canvas/sgl_canvas.c
     ${CMAKE_CURRENT_LIST_DIR}/bar/sgl_bar.c
     ${CMAKE_CURRENT_LIST_DIR}/chart/piechart/sgl_piechart.c
@@ -66,4 +67,5 @@ set(SGL_SOURCE
     ${CMAKE_CURRENT_LIST_DIR}/sprite/sgl_sprite.c
     ${CMAKE_CURRENT_LIST_DIR}/filebrowser/sgl_filebrowser.c
     ${CMAKE_CURRENT_LIST_DIR}/menu/sgl_menu.c
+    ${CMAKE_CURRENT_LIST_DIR}/coverflow/sgl_coverflow.c
 )
