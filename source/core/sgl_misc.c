@@ -342,6 +342,13 @@ const sgl_font_t monitor_font = {
     .unicode_num = SGL_ARRAY_SIZE(font_unicode),
 };
 
+typedef struct {
+    uint32_t history[8];
+    uint8_t index;
+    uint8_t count;
+    uint32_t last_tick;
+} fps_calculator_t;
+
 void sgl_monitor_trace(sgl_surf_t *surf)
 {
     static char fps_str[16] = {0};
@@ -349,17 +356,26 @@ void sgl_monitor_trace(sgl_surf_t *surf)
     static sgl_obj_t *monitor = NULL;
     static sgl_obj_t *fps = NULL;
     static sgl_obj_t *mem = NULL;
-    static uint32_t last_tick = 0;
+    static fps_calculator_t fps_calc = {0};
     uint32_t cur_tick = sgl_last_tick_get();
 
     if (monitor) {
-        uint32_t tick_used = cur_tick - last_tick;
+        uint32_t tick_used = cur_tick - fps_calc.last_tick;
 
         if (tick_used >= SGL_SYSTEM_TICK_MS) {
-            uint32_t fps_count = 1000 / tick_used;
-            last_tick = cur_tick;
+            uint32_t instant_fps = 1000 / tick_used;
+            fps_calc.history[fps_calc.index] = instant_fps;
+            fps_calc.index = (fps_calc.index + 1) % 8;
+            if (fps_calc.count < 8) fps_calc.count++;
 
-            sgl_snprintf(fps_str, sizeof(fps_str), "FPS:%d", fps_count);
+            uint32_t fps_sum = 0;
+            for (uint8_t i = 0; i < fps_calc.count; i++) {
+                fps_sum += fps_calc.history[i];
+            }
+            uint32_t fps_avg = fps_calc.count > 0 ? fps_sum / fps_calc.count : 0;
+            fps_calc.last_tick = cur_tick;
+
+            sgl_snprintf(fps_str, sizeof(fps_str), "FPS:%d", fps_avg);
             sgl_snprintf(mem_str, sizeof(mem_str), "MEM:%d.%d%", sgl_mm_get_monitor().used_rate >> 8, sgl_mm_get_monitor().used_rate & 0xff);
         }
 
