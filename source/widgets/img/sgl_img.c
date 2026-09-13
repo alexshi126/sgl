@@ -45,20 +45,6 @@
 #define QOI_HDR_OFF_U24_IDX_SZ       9
 #define QOI_HDR_OFF_U32_IDX_SZ       11
 
-/* QOI image info - static storage */
-static const uint8_t *s_qoi_src_data = NULL;
-static uint16_t s_qoi_width   = 0;
-static uint16_t s_qoi_height  = 0;
-static uint16_t s_qoi_u16_idx = 0;
-static uint16_t s_qoi_u24_idx = 0;
-static uint16_t s_qoi_u32_idx = 0;
-static const uint8_t *s_qoi_data_start = NULL;
-
-/* Per-line offset table - points to the owning img's qoi_line_offsets,
- * allocated on demand only while a QOI pixmap is drawn */
-static uint32_t *s_qoi_line_offsets = NULL;
-static uint8_t s_qoi_line_offsets_ready = 0;
-
 static inline uint16_t qoi_read_u16(const uint8_t *p)
 {
     return ((uint16_t)p[0] << 8) | p[1];
@@ -76,36 +62,34 @@ static inline uint32_t qoi_read_u32(const uint8_t *p)
 
 /**
  * @brief init QOI decoder - pre-compute line offset table
+ * @param img img object holding decoder context
  * @param src QOI encoded data
  * @param offsets caller-provided offset table (at least height entries)
  */
-static uint8_t qoi565_init(const uint8_t *src, uint32_t *offsets)
+static uint8_t qoi565_init(sgl_img_t *img, const uint8_t *src, uint32_t *offsets)
 {
-    if (src == NULL || offsets == NULL) return 1;
+    if (img == NULL || src == NULL || offsets == NULL) return 1;
 
-    s_qoi_width     = qoi_read_u16(src + QOI_HDR_OFF_W);
-    s_qoi_height    = qoi_read_u16(src + QOI_HDR_OFF_H);
-    s_qoi_u16_idx   = qoi_read_u16(src + QOI_HDR_OFF_U16_IDX_SZ);
-    s_qoi_u24_idx   = qoi_read_u16(src + QOI_HDR_OFF_U24_IDX_SZ);
-    s_qoi_u32_idx   = qoi_read_u16(src + QOI_HDR_OFF_U32_IDX_SZ);
+    uint16_t qoi_width     = qoi_read_u16(src + QOI_HDR_OFF_W);
+    uint16_t qoi_height    = qoi_read_u16(src + QOI_HDR_OFF_H);
+    uint16_t qoi_u16_idx   = qoi_read_u16(src + QOI_HDR_OFF_U16_IDX_SZ);
+    uint16_t qoi_u24_idx   = qoi_read_u16(src + QOI_HDR_OFF_U24_IDX_SZ);
+    uint16_t qoi_u32_idx   = qoi_read_u16(src + QOI_HDR_OFF_U32_IDX_SZ);
 
-    if (s_qoi_width == 0 || s_qoi_height == 0 || s_qoi_width > 240) {
+    if (qoi_width == 0 || qoi_height == 0 || qoi_width > 240) {
         return 2;
     }
 
-    uint32_t idx_total = s_qoi_u16_idx + s_qoi_u24_idx + s_qoi_u32_idx;
+    uint32_t idx_total = qoi_u16_idx + qoi_u24_idx + qoi_u32_idx;
     if (idx_total > 1024) return 3;
-
-    s_qoi_src_data = src;
-    s_qoi_data_start = src + 13 + idx_total;
 
     /* Pre-compute offsets of all lines */
     uint32_t ptr_idx = 13;
-    for (uint32_t i = 0; i < s_qoi_height; i++) {
-        if (i < s_qoi_u16_idx / 2) {
+    for (uint32_t i = 0; i < qoi_height; i++) {
+        if (i < qoi_u16_idx / 2) {
             offsets[i] = qoi_read_u16(src + ptr_idx);
             ptr_idx += 2;
-        } else if (i < (s_qoi_u16_idx / 2 + s_qoi_u24_idx / 3)) {
+        } else if (i < (qoi_u16_idx / 2 + qoi_u24_idx / 3)) {
             offsets[i] = qoi_read_u24(src + ptr_idx);
             ptr_idx += 3;
         } else {
@@ -113,8 +97,7 @@ static uint8_t qoi565_init(const uint8_t *src, uint32_t *offsets)
             ptr_idx += 4;
         }
     }
-    s_qoi_line_offsets = offsets;
-    s_qoi_line_offsets_ready = 1;
+    img->qoi_line_offsets = offsets;
 
     return 0;
 }
@@ -122,14 +105,25 @@ static uint8_t qoi565_init(const uint8_t *src, uint32_t *offsets)
 /**
  * @brief decode one QOI line - using pre-computed offset table
  */
-static uint8_t qoi565_decode_line(uint16_t line_idx, uint8_t *dst)
+static uint8_t qoi565_decode_line(sgl_img_t *img, uint16_t line_idx, uint8_t *dst)
 {
-    if (s_qoi_src_data == NULL || dst == NULL) return 1;
-    if (line_idx >= s_qoi_height || !s_qoi_line_offsets_ready) return 2;
+    if (img == NULL || img->pixmap == NULL || dst == NULL) return 1;
+    if (img->qoi_line_offsets == NULL) return 2;
+
+    const uint8_t *qoi_src = (const uint8_t*)img->pixmap[img->pixmap_idx].bitmap.array;
+    uint16_t qoi_width = img->pixmap[img->pixmap_idx].width;
+    uint16_t qoi_height = img->pixmap[img->pixmap_idx].height;
+    uint16_t qoi_u16_idx = qoi_read_u16(qoi_src + QOI_HDR_OFF_U16_IDX_SZ);
+    uint16_t qoi_u24_idx = qoi_read_u16(qoi_src + QOI_HDR_OFF_U24_IDX_SZ);
+    uint16_t qoi_u32_idx = qoi_read_u16(qoi_src + QOI_HDR_OFF_U32_IDX_SZ);
+    uint32_t idx_total = qoi_u16_idx + qoi_u24_idx + qoi_u32_idx;
+    const uint8_t *qoi_data_start = qoi_src + 13 + idx_total;
+
+    if (line_idx >= qoi_height) return 2;
 
     /* Use pre-computed offset */
-    const uint8_t *p = s_qoi_data_start + s_qoi_line_offsets[line_idx];
-    uint32_t line_pix = s_qoi_width;
+    const uint8_t *p = qoi_data_start + img->qoi_line_offsets[line_idx];
+    uint32_t line_pix = qoi_width;
     uint8_t *out_ptr = dst;
     uint8_t pr = 0, pg = 0, pb = 0;
 
@@ -208,12 +202,33 @@ static inline void rle_decompress_line(sgl_img_t *img, sgl_area_t *coords, sgl_a
     uintptr_t start_addr = img->pixmap[img->pixmap_idx].bitmap.addr;
     uint8_t format = img->pixmap->format;
     uint32_t pix_value;
+    uint8_t read_len;
 
     for (int i = coords->x1; i <= coords->x2; i++) {
         if (img->remainder == 0) {
             if (img->read != NULL) {
+                /* Read only the bytes we actually need for this RLE segment */
+                switch (format) {
+                case SGL_PIXMAP_FMT_RLE_RGB332:
+                case SGL_PIXMAP_FMT_RLE_ARGB2222:
+                    read_len = 2;
+                    break;
+                case SGL_PIXMAP_FMT_RLE_RGB565:
+                case SGL_PIXMAP_FMT_RLE_ARGB4444:
+                    read_len = 3;
+                    break;
+                case SGL_PIXMAP_FMT_RLE_RGB888:
+                    read_len = 4;
+                    break;
+                case SGL_PIXMAP_FMT_RLE_ARGB8888:
+                    read_len = 5;
+                    break;
+                default:
+                    read_len = 2;
+                    break;
+                }
                 read_ptr = tmp_buf;
-                img->read(start_addr + img->index, tmp_buf, sizeof(tmp_buf));
+                img->read(start_addr + img->index, tmp_buf, read_len);
             }
             else {
                 read_ptr = start_ptr + img->index;
@@ -277,21 +292,29 @@ static void sgl_img_construct_cb(sgl_surf_t *surf, sgl_obj_t* obj, sgl_event_t *
 {
     sgl_area_t clip = SGL_AREA_INVALID;
     sgl_img_t *img = sgl_container_of(obj, sgl_img_t, obj);
-    const sgl_pixmap_t *pixmap = &img->pixmap[img->pixmap_idx];
-    uintptr_t read_addr = pixmap->bitmap.addr;
-    uint8_t pix_byte = sgl_pixmal_get_pixel_bytes(pixmap);
+    const sgl_pixmap_t *pixmap;
+    uintptr_t read_addr;
+    uint8_t pix_byte;
     sgl_color_t tmp_color, *buf = NULL, *blend = NULL;
-    uint8_t *pixmap_buf = (uint8_t*)pixmap->bitmap.array;
+    uint8_t *pixmap_buf;
     size_t offset = 0;
-    uint8_t format = pixmap->format;
+    uint8_t format;
     uint8_t ga = img->alpha;
+    sgl_area_t area;
 
-    sgl_area_t area = {
-        .x1 = obj->coords.x1,
-        .y1 = obj->coords.y1,
-        .x2 = obj->coords.x1 + pixmap->width - 1,
-        .y2 = obj->coords.y1 + pixmap->height - 1,
-    };
+    if (img->pixmap == NULL) {
+        return;
+    }
+    pixmap = &img->pixmap[img->pixmap_idx];
+    read_addr = pixmap->bitmap.addr;
+    pix_byte = sgl_pixmal_get_pixel_bytes(pixmap);
+    pixmap_buf = (uint8_t*)pixmap->bitmap.array;
+    format = pixmap->format;
+
+    area.x1 = obj->coords.x1;
+    area.y1 = obj->coords.y1;
+    area.x2 = obj->coords.x1 + pixmap->width - 1;
+    area.y2 = obj->coords.y1 + pixmap->height - 1;
 
     if(evt->type == SGL_EVENT_DRAW_MAIN) {
         if (!sgl_surf_clip(surf, &obj->area, &clip)) {
@@ -310,12 +333,15 @@ static void sgl_img_construct_cb(sgl_surf_t *surf, sgl_obj_t* obj, sgl_event_t *
                     img->qoi_line_offsets = (uint32_t*)sgl_malloc(sizeof(uint32_t) * h);
                 }
             }
-            if (img->qoi_line_offsets != NULL && qoi565_init(qoi_src, img->qoi_line_offsets) == 0) {
+            if (img->qoi_line_offsets != NULL && qoi565_init(img, qoi_src, img->qoi_line_offsets) == 0) {
                 qoi_initialized = 1;
                 pix_byte = 2;
                 format = SGL_PIXMAP_FMT_RGB565;
                 if (img->flash_buffer == NULL) {
-                    img->flash_buffer = (uint8_t*)sgl_malloc(2 * s_qoi_width);
+                    img->flash_buffer = (uint8_t*)sgl_malloc(2 * pixmap->width);
+                    if (img->flash_buffer == NULL) {
+                        qoi_initialized = 0;
+                    }
                 }
             }
         }
@@ -333,6 +359,9 @@ static void sgl_img_construct_cb(sgl_surf_t *surf, sgl_obj_t* obj, sgl_event_t *
 
             if (img->flash_buffer == NULL) {
                 img->flash_buffer = (uint8_t*)sgl_malloc(pix_byte * (clip.x2 - clip.x1 + 1) * buf_lines);
+                if (img->flash_buffer == NULL) {
+                    return;
+                }
             }
             pixmap_buf = img->flash_buffer;
         }
@@ -352,7 +381,7 @@ static void sgl_img_construct_cb(sgl_surf_t *surf, sgl_obj_t* obj, sgl_event_t *
                  * Blend only when global alpha < 255 (decoded pixels are opaque). */
                 uint8_t *line_buf = img->flash_buffer;
                 for (int y = clip.y1; y <= clip.y2; y++) {
-                    qoi565_decode_line(y - area.y1, line_buf);
+                    qoi565_decode_line(img, y - area.y1, line_buf);
                     if (ga == SGL_ALPHA_MAX) {
                         memcpy(buf, line_buf + (clip.x1 - area.x1) * 2, row_width_bytes);
                     } else {
@@ -410,6 +439,15 @@ static void sgl_img_construct_cb(sgl_surf_t *surf, sgl_obj_t* obj, sgl_event_t *
                 DRAW_Y_TAIL();
                 break;
             case SGL_PIXMAP_FMT_RGB565:
+                if (img->alpha == SGL_ALPHA_MAX && img->read == NULL) {
+                    /* Fast path: direct line copy from internal RAM */
+                    const uint8_t *src = (const uint8_t*)pixmap->bitmap.array;
+                    for (int y = clip.y1; y <= clip.y2; y++) {
+                        memcpy(buf, src + ((y - area.y1) * pixmap->width + (clip.x1 - area.x1)) * 2, row_width_bytes);
+                        buf += surf->w;
+                    }
+                    break;
+                }
                 DRAW_Y_HEAD();
                     for (int x = clip.x1; x <= clip.x2; x++) {
                         tmp_color = sgl_rgb565_to_color(pixmap_buf[offset] | (pixmap_buf[offset + 1] << 8));
@@ -503,12 +541,6 @@ qoi_draw_done: ;
             sgl_free(img->flash_buffer);
         }
         if (img->qoi_line_offsets != NULL) {
-            /* Reset shared decoder state if it points to this img's table */
-            if (s_qoi_line_offsets == img->qoi_line_offsets) {
-                s_qoi_line_offsets = NULL;
-                s_qoi_line_offsets_ready = 0;
-                s_qoi_src_data = NULL;
-            }
             sgl_free(img->qoi_line_offsets);
             img->qoi_line_offsets = NULL;
         }
