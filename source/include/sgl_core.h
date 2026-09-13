@@ -1160,7 +1160,7 @@ static inline void sgl_obj_set_hidden(sgl_obj_t *obj)
 {
     SGL_ASSERT(obj != NULL);
     obj->hide = 1;
-    sgl_obj_set_dirty(obj);
+    sgl_dirty_area_push(&obj->area);
 }
 
 /**
@@ -1172,7 +1172,7 @@ static inline void sgl_obj_set_visible(sgl_obj_t *obj)
 {
     SGL_ASSERT(obj != NULL);
     obj->hide = 0;
-    sgl_obj_set_dirty(obj);
+    sgl_dirty_area_push(&obj->area);
 }
 
 /**
