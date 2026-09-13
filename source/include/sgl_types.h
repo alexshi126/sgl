@@ -112,7 +112,8 @@ extern "C" {
 #define  SGL_PIXMAP_FMT_RLE_RGB888              (11)
 #define  SGL_PIXMAP_FMT_RLE_ARGB8888            (12)
 #define  SGL_PIXMAP_FMT_QOI_RGB565              (13)
-#define  SGL_PIXMAP_FMT_MAX                     (14)
+#define  SGL_PIXMAP_FMT_ARGB8565                (14)
+#define  SGL_PIXMAP_FMT_MAX                     (15)
 
 /* the font format */
 #define  SGL_FONT_FMT_NORMAL                    (0)
@@ -237,6 +238,10 @@ extern "C" {
                                                                .ch.green   = ((rgb888) >> 8),                         \
                                                                .ch.red     = ((rgb888) >> 16),}
 
+#define sgl_rgb8565_to_color(rgb8565)           (sgl_color_t){ .ch.blue    = ((((rgb8565) >> 0) & 0x1F) << 3),          \
+                                                               .ch.green   = ((((rgb8565) >> 5) & 0x3F) << 2),          \
+                                                               .ch.red     = ((((rgb8565) >> 11) & 0x1F) << 3),}
+
 #elif (CONFIG_SGL_FBDEV_PIXEL_DEPTH == SGL_COLOR_RGB565)
 #define sgl_rgb(r,g,b)                          (sgl_color_t){ .ch.blue    = (b) >> 3,                                \
                                                                .ch.green   = (g) >> 2,                                \
@@ -268,6 +273,10 @@ extern "C" {
                                                                .ch.green   = (((rgb888) >> 8) >> 2),                  \
                                                                .ch.red     = (((rgb888) >> 16) >> 3),}
 
+#define sgl_rgb8565_to_color(rgb8565)           (sgl_color_t){ .ch.blue    = ((((rgb8565) >> 0) & 0x1F) >> 0),          \
+                                                               .ch.green   = ((((rgb8565) >> 5) & 0x3F) >> 0),          \
+                                                               .ch.red     = ((((rgb8565) >> 11) & 0x1F) >> 0),}
+
 #elif (CONFIG_SGL_FBDEV_PIXEL_DEPTH == SGL_COLOR_RGB332)
 #define sgl_rgb(r,g,b)                          (sgl_color_t){ .ch.blue    = (b >> 6),                                \
                                                                .ch.green   = (g >> 5),                                \
@@ -298,6 +307,10 @@ extern "C" {
 #define sgl_rgb888_to_color(rgb888)             (sgl_color_t){ .ch.blue    = (((rgb888) >> 0)>> 6),                   \
                                                                .ch.green   = (((rgb888) >> 8) >> 5),                  \
                                                                .ch.red     = (((rgb888) >> 16) >> 6),}
+
+#define sgl_rgb8565_to_color(rgb8565)           (sgl_color_t){ .ch.blue    = ((((rgb8565) >> 0) & 0x1F) >> 3),          \
+                                                               .ch.green   = ((((rgb8565) >> 5) & 0x3F) >> 3),          \
+                                                               .ch.red     = ((((rgb8565) >> 11) & 0x1F) >> 3),}
 
 #endif
 

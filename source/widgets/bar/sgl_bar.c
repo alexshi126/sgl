@@ -43,7 +43,7 @@ static void sgl_bar_construct_cb(sgl_surf_t *surf, sgl_obj_t* obj, sgl_event_t *
         .border_mask = obj->focus,
         .border_alpha = bar->alpha,
         .border_color = bar->border_color,
-        .pixmap = bar->pixmap,
+        .pixmap = NULL,
         .color = bar->fill_color,
         .radius = obj->radius,
     };
@@ -220,18 +220,6 @@ void sgl_bar_set_border_color(sgl_obj_t *obj, sgl_color_t color)
 {
     sgl_bar_t *bar = sgl_container_of(obj, sgl_bar_t, obj);
     bar->border_color = color;
-    sgl_obj_set_dirty(obj);
-}
-
-/**
- * @brief set the bar pixmap
- * @param obj bar object
- * @param pixmap pixmap
- */
-void sgl_bar_set_pixmap(sgl_obj_t *obj, const sgl_pixmap_t *pixmap)
-{
-    sgl_bar_t *bar = sgl_container_of(obj, sgl_bar_t, obj);
-    bar->pixmap = pixmap;
     sgl_obj_set_dirty(obj);
 }
 

@@ -68,6 +68,10 @@ static inline sgl_color_t decode_pixel(const sgl_pixmap_t *pixmap, const uint8_t
         pv = buf[offset] | (buf[offset + 1] << 8) | (buf[offset + 2] << 16);
         *out_opa = buf[offset + 3];
         return sgl_rgb888_to_color(pv);
+    case SGL_PIXMAP_FMT_ARGB8565:
+        pv = buf[offset] | (buf[offset + 1] << 8);
+        *out_opa = buf[offset + 2];
+        return sgl_rgb8565_to_color(pv);
     default:
         return (sgl_color_t){0};
     }
@@ -365,7 +369,7 @@ static void sgl_img_ext_construct_cb(sgl_surf_t *surf, sgl_obj_t* obj, sgl_event
                 int32_t src_y_fixed = ry + pivot_y_fixed;
 
                 /* Decode and blend pixel */
-                if (pixmap->format <= SGL_PIXMAP_FMT_ARGB8888) {
+                if (pixmap->format <= SGL_PIXMAP_FMT_ARGB8888 || pixmap->format == SGL_PIXMAP_FMT_ARGB8565) {
 #if (CONFIG_SGL_PIXMAP_BILINEAR_INTERP)
                     /* --- Edge anti-aliasing: compute sub-pixel coverage ---
                      * For pixels within 1 source-pixel of any image edge,

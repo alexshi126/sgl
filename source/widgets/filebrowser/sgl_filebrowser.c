@@ -553,7 +553,7 @@ static void sgl_filebrowser_construct_cb(sgl_surf_t *surf, sgl_obj_t *obj, sgl_e
             .border_alpha = fb->alpha,
             .border_color = fb->border_color,
             .radius       = obj->radius,
-            .pixmap       = fb->pixmap,
+            .pixmap       = NULL,
         };
 
         sgl_draw_rect(surf, &obj->area, &obj->coords, &bg_desc);
@@ -1016,19 +1016,6 @@ void sgl_filebrowser_set_text_font(sgl_obj_t *obj, const sgl_font_t *font)
         fb->selected_item.icon_w =
             (int16_t)sgl_font_get_string_width(fb->selected_item.icon, fb->font);
     }
-    sgl_obj_set_dirty(obj);
-}
-
-/**
- * @brief Set the pixmap of the file browser object.
- * @param obj: file browser object
- * @param pixmap: pixmap to set
- * @return none
- */
-void sgl_filebrowser_set_pixmap(sgl_obj_t *obj, const sgl_pixmap_t *pixmap)
-{
-    sgl_filebrowser_t *fb = sgl_container_of(obj, sgl_filebrowser_t, obj);
-    fb->pixmap = pixmap;
     sgl_obj_set_dirty(obj);
 }
 

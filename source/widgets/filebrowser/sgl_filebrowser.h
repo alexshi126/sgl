@@ -138,7 +138,6 @@ typedef struct sgl_filebrowser {
     uint16_t item_num;
     int16_t  pending_dir_index;
     const sgl_font_t   *font;
-    const sgl_pixmap_t *pixmap;
     sgl_color_t item_text_color;
     sgl_color_t item_selected_color;
     sgl_color_t bg_color;
@@ -261,14 +260,6 @@ void sgl_filebrowser_set_path_color(sgl_obj_t *obj, sgl_color_t color);
  * @return none
  */
 void sgl_filebrowser_set_text_font(sgl_obj_t *obj, const sgl_font_t *font);
-
-/**
- * @brief Set the pixmap of the file browser object.
- * @param obj: file browser object
- * @param pixmap: pixmap to set
- * @return none
- */
-void sgl_filebrowser_set_pixmap(sgl_obj_t *obj, const sgl_pixmap_t *pixmap);
 
 /**
  * @brief Set the text icons of the file browser object.

@@ -42,7 +42,6 @@ extern "C" {
  * @obj: sgl general object
  * @param track_color track color
  * @param border_color border color
- * @param pixmap pixmap
  * @param fill_color fill color
  * @param direct bar direction
  * @param value bar value
@@ -50,7 +49,6 @@ extern "C" {
  */
 typedef struct sgl_bar {
     sgl_obj_t          obj;
-    const sgl_pixmap_t *pixmap;
     sgl_color_t        fill_color;
     sgl_color_t        track_color;
     sgl_color_t        border_color;
