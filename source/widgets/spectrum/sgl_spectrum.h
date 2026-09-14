@@ -39,6 +39,9 @@
 #define SGL_SPECTRUM_MODE_BAR_HAT                  (SGL_SPECTRUM_MODE_HAT_FLAG | SGL_SPECTRUM_MODE_BAR)
 #define SGL_SPECTRUM_MODE_BLOCK_HAT                (SGL_SPECTRUM_MODE_HAT_FLAG | SGL_SPECTRUM_MODE_BLOCK)
 
+/* maximum number of bars; all buffers are static so no dynamic memory */
+#define SGL_SPECTRUM_BAR_MAX                       (64)
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -51,13 +54,16 @@ typedef struct sgl_spectrum {
     sgl_obj_t   obj;
     sgl_color_t bar_color;
     sgl_color_t bar_hat_color;
-    uint16_t    bar_num;
-    uint8_t     bar_width;
+    uint16_t    bar_num;         /* active bar count, <= BAR_MAX      */
+    uint16_t    bar_height;      /* widget inner height in px (cached) */
+    uint8_t     bar_width;       /* uniform bar width in px            */
+    uint8_t     bar_gap;         /* gap between bars in px             */
     uint8_t     bar_mode;
     uint8_t     alpha;
     uint8_t     bar_hat_height;
-    uint16_t    *bar_value;
-    uint16_t    *bar_hat;
+    uint16_t    bar_value[SGL_SPECTRUM_BAR_MAX];
+    uint16_t    bar_hat[SGL_SPECTRUM_BAR_MAX];
+    int16_t     bar_x[SGL_SPECTRUM_BAR_MAX];   /* cached left x per bar */
 } sgl_spectrum_t;
 
 /**
@@ -72,6 +78,8 @@ sgl_obj_t* sgl_spectrum_create(sgl_obj_t* parent);
  * @param obj spectrum object
  * @param number bar number
  * @return none
+ * @note re-layouts the bars and (re)allocates the value/hat buffers; safe
+ *       to call again with a different number.
  */
 void sgl_spectrum_set_bar_number(sgl_obj_t *obj, uint16_t number);
 
@@ -79,7 +87,7 @@ void sgl_spectrum_set_bar_number(sgl_obj_t *obj, uint16_t number);
  * @brief set spectrum bar value
  * @param obj spectrum object
  * @param index bar index
- * @param value bar value
+ * @param value bar value, 0..widget height in px (clamped)
  * @return none
  */
 void sgl_spectrum_set_bar_value(sgl_obj_t *obj, uint16_t index, uint16_t value);
